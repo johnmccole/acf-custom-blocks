@@ -21,8 +21,12 @@ add_action('acf/init', function() {
         $path = dirname($block_file);
 
         if ($block_data) {
+            $template = isset($block_data['acf']['renderTemplate'])
+                ? $path . '/' . basename($block_data['acf']['renderTemplate'])
+                : $path . '/template.php'; // fallback
+
             acf_register_block_type(array_merge($block_data, [
-                'render_template' => $path . '/' . basename($block_data['acf']['renderTemplate']),
+                'render_template' => $template,
                 'name'            => $block_data['name'],
             ]));
         }
