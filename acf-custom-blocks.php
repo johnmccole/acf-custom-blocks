@@ -1,7 +1,7 @@
 <?php
 /**
  * Plugin Name: ACF Custom Blocks
- * Description: Dynamically register ACF Blocks from the admin UI.
+ * Description: Register ACF Blocks from the admin UI.
  * Version: 0.1a
  * Author: JM Web Dev
  */
@@ -13,7 +13,7 @@ require_once plugin_dir_path(__FILE__) . 'includes/admin-page.php';
 require_once plugin_dir_path(__FILE__) . 'includes/block-generator.php';
 
 add_action('acf/init', function() {
-    $block_dir = get_template_directory() . '/blocks';
+    $block_dir = get_stylesheet_directory() . '/blocks';
     if (!file_exists($block_dir)) return;
 
     foreach (glob($block_dir . '/*/block.json') as $block_file) {
@@ -21,15 +21,15 @@ add_action('acf/init', function() {
         $path = dirname($block_file);
 
         if ($block_data) {
-            $template = isset($block_data['acf']['renderTemplate'])
-                ? $path . '/' . basename($block_data['acf']['renderTemplate'])
-                : $path . '/template.php'; // fallback
+			$template = isset($block_data['acf']['renderTemplate'])
+				? $path . '/' . basename($block_data['acf']['renderTemplate'])
+				: $path . '/template.php'; // fallback
 
-            acf_register_block_type(array_merge($block_data, [
-                'render_template' => $template,
-                'name'            => $block_data['name'],
-            ]));
-        }
+			acf_register_block_type(array_merge($block_data, [
+				'render_template' => $template,
+				'name'            => $block_data['name'],
+			]));
+		}
     }
 });
 
@@ -41,8 +41,8 @@ add_filter('block_categories_all', function ($categories, $post) {
 }, 10, 2);
 
 add_action('wp_enqueue_scripts', function () {
-    $theme_uri = get_template_directory_uri();
-    $theme_dir = get_template_directory();
+    $theme_uri = get_stylesheet_directory_uri();
+    $theme_dir = get_stylesheet_directory();
 
     // Load the same block styles on the frontend
     if (file_exists($theme_dir . '/blocks/editor-style.css')) {
@@ -56,8 +56,8 @@ add_action('wp_enqueue_scripts', function () {
 });
 
 add_action('enqueue_block_editor_assets', function () {
-    $blocks_path = get_template_directory() . '/blocks';
-    $blocks_url  = get_template_directory_uri() . '/blocks';
+    $blocks_path = get_stylesheet_directory() . '/blocks';
+    $blocks_url  = get_stylesheet_directory_uri() . '/blocks';
 
     if (!file_exists($blocks_path)) return;
 

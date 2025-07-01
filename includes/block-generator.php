@@ -7,7 +7,7 @@ add_action('admin_init', function() {
 });
 
 function acfcb_generate_block($data) {
-    $theme_dir = get_template_directory();
+    $theme_dir = get_stylesheet_directory();
     $acf_json = $theme_dir . '/acf-json';
     $blocks_dir = $theme_dir . '/blocks';
 
