@@ -21,3 +21,5 @@ Blocks support InnerBlocks too, add:
     <?= '<InnerBlocks />'; ?>
 
 To where you would like InnerBlocks to display.
+
+An option to Re-Generate field groups exists, these will not overwrite existing groups, just add a group(s) that are missing or mis-registerd.
