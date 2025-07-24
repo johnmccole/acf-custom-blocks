@@ -22,6 +22,10 @@ add_action('admin_enqueue_scripts', function ($hook) {
 });
 
 add_action('admin_menu', function() {
+    if (!current_user_can('manage_options')) {
+        return; // block access for non-admins
+    }
+
     add_menu_page(
         'ACF Custom Blocks',
         'ACF Blocks',
@@ -100,6 +104,143 @@ function acfcb_admin_page() {
                     <td><input type="text" name="block_keywords" id="block_keywords" style="width: 100%;"></td></tr>
             </table>
             <?php submit_button('Generate Block'); ?>
+        </form>
+    </div>
+    <?php
+}
+
+// Add a submenu page for ACF Custom Blocks
+add_action('admin_menu', function () {
+    if (!current_user_can('manage_options')) {
+        return; // block access for non-admins
+    }
+
+    add_submenu_page(
+        'options-general.php?page=acf-custom-blocks', // Or use your plugin's top-level menu slug
+        'ACF Custom Blocks',
+        'ACF Custom Blocks',
+        'manage_options',
+        'acf-custom-blocks',
+        'acf_custom_blocks_admin_page'
+    );
+});
+
+function acf_custom_blocks_admin_page() {
+    // Handle individual field group generation
+    if (
+        isset($_POST['generate_field_group']) && // Check if form submitted
+        isset($_GET['page']) &&
+        $_GET['page'] === 'acf-custom-blocks' // Ensure it's only on this admin page
+    ) {
+        $block_to_generate = sanitize_title($_POST['generate_field_group']);
+
+        if (check_admin_referer('acf_custom_blocks_generate_' . $block_to_generate)) {
+            // Remove block from created groups so it can be regenerated
+            $created_groups = get_option('acf_custom_blocks_created_groups', []);
+            $created_groups = array_diff($created_groups, [$block_to_generate]);
+            update_option('acf_custom_blocks_created_groups', $created_groups);
+
+            // Generate field group again
+            acf_custom_blocks_create_field_group_for_block($block_to_generate);
+
+            echo '<div class="notice notice-success is-dismissible">
+                <p>✅ Field group for <strong>' . esc_html($block_to_generate) . '</strong> has been (re)generated.</p>
+            </div>';
+        }
+    }
+
+    // Handle reset action
+    if (isset($_POST['acf_custom_blocks_reset']) && check_admin_referer('acf_custom_blocks_reset_nonce')) {
+        delete_option('acf_custom_blocks_created_groups');
+        echo '<div class="notice notice-success is-dismissible">
+            <p>✅ Block field groups reset. They will regenerate on next page load.</p>
+        </div>';
+    }
+
+    // Get list of blocks
+    $block_dir = get_template_directory() . '/blocks';
+    $blocks = [];
+    if (file_exists($block_dir)) {
+        foreach (glob($block_dir . '/*/block.json') as $block_file) {
+            $block_data = json_decode(file_get_contents($block_file), true);
+            if ($block_data && isset($block_data['name'])) {
+                $blocks[] = sanitize_title($block_data['name']);
+            }
+        }
+    }
+    ?>
+    <div class="wrap">
+        <h3>ACF Custom Blocks</h3>
+        <p>Review block field groups and manage auto-generated groups.</p>
+
+        <table class="widefat fixed striped">
+            <thead>
+                <tr>
+                    <th>Block Name</th>
+                    <th>Field Group Status</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                <?php foreach ($blocks as $block_name) :
+                    $field_group_title = 'Block: ' . ucfirst(str_replace('-', ' ', $block_name)) . ' Fields';
+                    $field_group = null;
+
+                    $query = new WP_Query(array(
+                        'post_type'      => 'acf-field-group',
+                        'title'          => $field_group_title,
+                        'posts_per_page' => 1,
+                        'post_status'    => 'publish',
+                        'fields'         => 'ids',
+                    ));
+
+                    if (!empty($query->posts)) {
+                        $field_group_id = $query->posts[0];
+                        $field_group    = get_post($field_group_id);
+                    }
+
+                    wp_reset_postdata();
+                    ?>
+                    <tr>
+                        <td><?php echo esc_html( ucwords( str_replace('-', ' ', $block_name) ) ); ?></td>
+                        <td>
+                            <?php if ($field_group) : ?>
+                                ✅ Field Group Exists
+                            <?php else : ?>
+                                ❌ Missing Field Group
+                            <?php endif; ?>
+                        </td>
+                        <td>
+                            <?php if ($field_group) : ?>
+                                <a href="<?php echo esc_url(get_edit_post_link($field_group->ID)); ?>" class="button button-primary" target="_blank">Edit</a>
+                                <form method="post" style="display:inline-block;">
+                                    <?php wp_nonce_field('acf_custom_blocks_generate_' . $block_name); ?>
+                                    <input type="hidden" name="generate_field_group" value="<?php echo esc_attr($block_name); ?>">
+                                    <button type="submit" class="button">🛠 Regenerate</button>
+                                </form>
+                            <?php else : ?>
+                                <form method="post" style="display:inline-block;">
+                                    <?php wp_nonce_field('acf_custom_blocks_generate_' . $block_name); ?>
+                                    <input type="hidden" name="generate_field_group" value="<?php echo esc_attr($block_name); ?>">
+                                    <button type="submit" class="button">➕ Generate Field Group</button>
+                                </form>
+                            <?php endif; ?>
+                        </td>
+                    </tr>
+                <?php endforeach; ?>
+            </tbody>
+        </table>
+
+        <hr>
+
+        <form method="post" onsubmit="return confirm('Are you sure you want to regenerate all block field groups? This won’t effect any other ACF field groups.');">
+            <?php wp_nonce_field('acf_custom_blocks_reset_nonce'); ?>
+            <p>
+                <button type="submit" name="acf_custom_blocks_reset" class="button button-danger">
+                    🔄 Regenerate ALL Block Field Groups
+                </button>
+            </p>
+            <p class="description">This only regenerates field groups for blocks created by this plugin. Other ACF field groups won’t be effected.</p>
         </form>
     </div>
     <?php

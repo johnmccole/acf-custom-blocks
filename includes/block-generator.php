@@ -7,7 +7,7 @@ add_action('admin_init', function() {
 });
 
 function acfcb_generate_block($data) {
-    $theme_dir = get_stylesheet_directory();
+    $theme_dir = get_template_directory();
     $acf_json = $theme_dir . '/acf-json';
     $blocks_dir = $theme_dir . '/blocks';
 
@@ -193,11 +193,6 @@ function acfcb_generate_block($data) {
             <!-- Render: <?= \$block['title']; ?> -->
         </section>
         PHP);
-
-        // Example Data
-        file_put_contents($block_path . '/example.json', json_encode([
-            'data' => ['example_field' => 'Example Value']
-        ], JSON_PRETTY_PRINT));
 
         // Success message
         add_action('admin_notices', function() use ($label) {
