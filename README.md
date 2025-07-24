@@ -9,10 +9,9 @@ A free plugin to generate custom Blocks and their CSS file in the active WordPre
 A 'blocks' directory is added to the theme root, each block is in its own sub-directory. Within each of these are 6 files:
 
 1. block.json
-2. example.json
-3. index.php
-4. style.css
-5. template.php
+2. index.php
+3. style.css
+4. template.php
 
 Update template.php with markup and custom fields, update style.css with custom styles. 
 
